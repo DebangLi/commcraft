@@ -4,14 +4,14 @@ from gym import spaces
 from torchcraft_py import proto
 import gym_starcraft.utils as utils
 
-import starcraft_env as sc
+import gym_starcraft.envs.starcraft_env as sc
 
 DISTANCE_FACTOR = 16
 
 class MultiAgentEnv(sc.StarCraftEnv):
     def __init__(self, server_ip, server_port, speed=0, frame_skip=0,
                  self_play=False, max_episode_steps=2000):
-        super(SingleBattleEnv, self).__init__(server_ip, server_port, speed,
+        super(MultiAgentEnv, self).__init__(server_ip, server_port, speed,
                                               frame_skip, self_play,
                                               max_episode_steps)
 
@@ -29,8 +29,8 @@ class MultiAgentEnv(sc.StarCraftEnv):
 
         # for multi agent, add more observations in the future
         # uid, hit point, shield, colldown, ground range, is enemy
-        obs_low = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        obs_high = [500.0, 100.0, 100.0, 100.0, 1.0, 1.0]
+        obs_low = [0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        obs_high = [500, 100.0, 100.0, 100.0, 1.0, 1.0]
         return spaces.Box(np.array(obs_low), np.array(obs_high))
 
     def _make_commands(self, action):
@@ -68,12 +68,12 @@ class MultiAgentEnv(sc.StarCraftEnv):
                 proto.commands['command_unit_protected'], myself_id,
                 proto.unit_command_types['Move'], -1, x2, -y2))
         '''
-        for i in len(action):
-            uid = action[i][0]
+        for i in range(len(action)):
+            uid = int(action[i][0])
             attacking = self.state['units_myself'][uid]
             if action[i][1] > 0:
                 # Attack action
-                attacked_uid = action[i][4]
+                attacked_uid = int(action[i][4])
                 attacked = self.state['units_enemy'][attacked_uid]
                 if attacking is None or attacked is None:
                     print('attacking or attacked is emety! Please check!')
@@ -97,6 +97,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
     def _make_observation(self):
         myself = None
         enemy = None
+	#print(self.observation_space.shape[0])
         '''
         for uid, ut in self.state['units_myself'].iteritems():
             myself = ut
@@ -121,7 +122,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
         else:
             obs[9] = 1.0
         '''
-        obs = np.zeros([len(self.state['units_myselt']) + len(self.state['units_enemy']), self.observation_space.shape])
+        obs = np.zeros([len(self.state['units_myself']) + len(self.state['units_enemy']), self.observation_space.shape[0]])
         n = 0
         # ours
         for uid, ut in self.state['units_myself'].iteritems():
@@ -141,17 +142,20 @@ class MultiAgentEnv(sc.StarCraftEnv):
             obs[n][3] = enemy.groundCD
             obs[n][4] = enemy.groundRange / DISTANCE_FACTOR - 1
             obs[n][5] = 1.0
+	    n = n+1
 
         return obs
 
     def _compute_reward(self):
         reward = 0
+	'''
         if self.obs[5] + 1 > 1.5:
             reward = -1
         if self.obs_pre[6] > self.obs[6]:
             reward = 15
         if self.obs_pre[0] > self.obs[0]:
             reward = -10
+	'''
         if self._check_done() and not bool(self.state['battle_won']):
             reward = -500
         if self._check_done() and bool(self.state['battle_won']):
