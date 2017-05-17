@@ -16,16 +16,21 @@ class MultiAgentEnv(sc.StarCraftEnv):
                                               max_episode_steps)
 
     def _action_space(self):
-        # attack or move, move_degree, move_distance
-        action_low = [-1.0, -1.0, -1.0]
-        action_high = [1.0, 1.0, 1.0]
+        # uid to take action, attack(1) or move(-1), move_degree, move_distance, attacked uid
+        action_low = [0, -1.0, -1.0, -1.0, 0]
+        action_high = [500, 1.0, 1.0, 1.0, 500]
         return spaces.Box(np.array(action_low), np.array(action_high))
 
     def _observation_space(self):
         # hit points, cooldown, ground range, is enemy, degree, distance (myself)
         # hit points, cooldown, ground range, is enemy (enemy)
-        obs_low = [0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        obs_high = [100.0, 100.0, 1.0, 1.0, 1.0, 50.0, 100.0, 100.0, 1.0, 1.0]
+        #obs_low = [0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        #obs_high = [100.0, 100.0, 1.0, 1.0, 1.0, 50.0, 100.0, 100.0, 1.0, 1.0]
+
+        # for multi agent, add more observations in the future
+        # uid, hit point, shield, colldown, ground range, is enemy
+        obs_low = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        obs_high = [500.0, 100.0, 100.0, 100.0, 1.0, 1.0]
         return spaces.Box(np.array(obs_low), np.array(obs_high))
 
     def _make_commands(self, action):
@@ -63,6 +68,29 @@ class MultiAgentEnv(sc.StarCraftEnv):
                 proto.commands['command_unit_protected'], myself_id,
                 proto.unit_command_types['Move'], -1, x2, -y2))
         '''
+        for i in len(action):
+            uid = action[i][0]
+            attacking = self.state['units_myself'][uid]
+            if action[i][1] > 0:
+                # Attack action
+                attacked_uid = action[i][4]
+                attacked = self.state['units_enemy'][attacked_uid]
+                if attacking is None or attacked is None:
+                    print('attacking or attacked is emety! Please check!')
+                    continue
+                cmds.append(proto.concat_cmd(proto.commands['command_unit_protected'], uid, 
+                    proto.unit_command_types['Attack_Unit'], attacked_uid))
+            else:
+                # Move action
+                if attacking is None:
+                    print('The unit to move is empty, please chaeck!')
+                    continue
+                degree = action[i][2] * 180
+                distance = (action[i][3] + 1) * DISTANCE_FACTOR
+                x2, y2 = utils.get_position(degree, distance, attacking.x, -attacking.y)
+                cmd.append(proto.concat_cmd(proto.commands['command_unit_protected'], uid,
+                    proto.unit_command_types['Move'], -1, x2, -y2))
+
 
         return cmds
 
@@ -93,6 +121,26 @@ class MultiAgentEnv(sc.StarCraftEnv):
         else:
             obs[9] = 1.0
         '''
+        obs = np.zeros([len(self.state['units_myselt']) + len(self.state['units_enemy']), self.observation_space.shape])
+        n = 0
+        # ours
+        for uid, ut in self.state['units_myself'].iteritems():
+            myself = ut
+            obs[n][0] = uid
+            obs[n][1] = myself.health
+            obs[n][2] = myself.shield
+            obs[n][3] = myself.groundCD
+            obs[n][4] = myself.groundRange / DISTANCE_FACTOR - 1
+            obs[n][5] = 0.0
+            n = n + 1
+        for uid, ut in self.state['units_enemy'].iteritems():
+            enemy = ut
+            obs[n][0] = uid
+            obs[n][1] = enemy.health
+            obs[n][2] = enemy.shield
+            obs[n][3] = enemy.groundCD
+            obs[n][4] = enemy.groundRange / DISTANCE_FACTOR - 1
+            obs[n][5] = 1.0
 
         return obs
 
