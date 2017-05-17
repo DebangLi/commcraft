@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     env = sc.MultiAgentEnv(args.ip, args.port, speed=30)
     env.seed(123)
-    agent = WeakestAgent(env.action_space)
+    agent = ClosetAgent(env.action_space)
 
     episodes = 0
     while True:
@@ -50,7 +50,6 @@ if __name__ == '__main__':
         done = False
         while not done:
             action = agent.act(obs)
-            print(action)
             obs, reward, done, info = env.step(action)
         episodes += 1
 
