@@ -1,28 +1,31 @@
 import argparse
 import numpy as np
 import multi_agent_env as sc
+import utils
 
 
-class WeakestAgent(object):
+class ClosetAgent(object):
     def __init__(self, action_space):
         self.action_space = action_space
 
     def act(self, obs):
         nagent = len(obs) - np.sum(obs, axis = 0, dtype = np.int32)[5]
         action = np.zeros([nagent, self.action_space.shape[0]])
-        tmp_hp = 1000000
         kill_all = True
-        for i in range(len(obs)):
-            hp = obs[i][1] + obs[i][2]
-            if obs[i][5] != 0 and hp < tmp_hp:
-                target_id = obs[i][0]
-                tmp_hp = hp
-                kill_all = False
-        if kill_all:
-            return None
-        n = 0 
+        n = 0
         for i in range(len(obs)):
             if obs[i][5] == 0:
+                distance = 1e6
+                target_id = -1
+                for j in range(len(obs)):
+                    if obs[j][5] == 1:
+                        dis = utils.get_distance(obs[i][6], obs[i][7], obs[j][6], obs[j][7])
+                        if dis < distance:
+                            target_id = obs[j][0]
+                            distance = dis
+                if target_id == -1:
+                    return None
+
                 action[n][0] = obs[i][0]
                 action[n][1] = 1
                 action[n][4] = target_id
@@ -47,6 +50,7 @@ if __name__ == '__main__':
         done = False
         while not done:
             action = agent.act(obs)
+            print(action)
             obs, reward, done, info = env.step(action)
         episodes += 1
 

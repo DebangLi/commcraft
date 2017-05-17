@@ -28,9 +28,9 @@ class MultiAgentEnv(sc.StarCraftEnv):
         #obs_high = [100.0, 100.0, 1.0, 1.0, 1.0, 50.0, 100.0, 100.0, 1.0, 1.0]
 
         # for multi agent, add more observations in the future
-        # uid, hit point, shield, colldown, ground range, is enemy
-        obs_low = [0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        obs_high = [500, 100.0, 100.0, 100.0, 1.0, 1.0]
+        # uid, hit point, shield, colldown, ground range, is enemy, pos.x, pos.y
+        obs_low = [0, 0.0, 0.0, 0.0, 0.0, 0.0, -1e6, -1e6]
+        obs_high = [500, 100.0, 100.0, 100.0, 1.0, 1.0, 1e6, 1e6]
         return spaces.Box(np.array(obs_low), np.array(obs_high))
 
     def _make_commands(self, action):
@@ -133,6 +133,8 @@ class MultiAgentEnv(sc.StarCraftEnv):
             obs[n][3] = myself.groundCD
             obs[n][4] = myself.groundRange / DISTANCE_FACTOR - 1
             obs[n][5] = 0.0
+            obs[n][6] = myself.x
+            obs[n][7] = myself.y
             n = n + 1
         for uid, ut in self.state['units_enemy'].iteritems():
             enemy = ut
@@ -142,6 +144,8 @@ class MultiAgentEnv(sc.StarCraftEnv):
             obs[n][3] = enemy.groundCD
             obs[n][4] = enemy.groundRange / DISTANCE_FACTOR - 1
             obs[n][5] = 1.0
+            obs[n][6] = enemy.x
+            obs[n][7] = enemy.y
 	    n = n+1
 
         return obs
