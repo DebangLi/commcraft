@@ -171,7 +171,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
             n_myself_pre = 0
             enemy_hp_pre = 0
             n_enemy_pre = 0
-            for i in len(self.obs):
+            for i in range(len(self.obs)):
                 if self.obs[i][5] == 0:
                     myself_hp += self.obs[i][1] + self.obs[i][2]
                     n_myself += 1
@@ -181,7 +181,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
             myself_hp = myself_hp / (n_myself + np.finfo(np.float32).eps)
             enemy_hp = enemy_hp / (n_enemy + np.finfo(np.float32).eps)
 
-            for j in len(self.obs_pre):
+            for j in range(len(self.obs_pre)):
                 if self.obs_pre[j][5] == 0:
                     myself_hp_pre += self.obs_pre[j][1] + self.obs_pre[j][2]
                     n_myself_pre += 1
