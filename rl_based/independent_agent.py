@@ -19,6 +19,8 @@ parser.add_argument('--seed', type=int, default=543, metavar='N',
                     help='random seed (default: 543)')
 parser.add_argument('--log_interval', type=int, default=10, metavar='N',
                     help='interval between training status logs (default: 10)')
+parser.add_argument('--ip', help='server ip')
+parser.add_argument('--port', help='server port', default="11111")
 args = parser.parse_args()
 
 DISTANCE_FACTOR = 16
@@ -123,10 +125,6 @@ def finish_episode():
 	del model.saved_actions[:]
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--ip', help='server ip')
-    parser.add_argument('--port', help='server port', default="11111")
-    args = parser.parse_args()
 
     env = sc.MultiAgentEnv(args.ip, args.port, speed=30)
     env.seed(123)
