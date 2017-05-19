@@ -73,6 +73,8 @@ class MultiAgentEnv(sc.StarCraftEnv):
             attacking = self.state['units_myself'][uid]
             if action[i][1] > 0:
                 # Attack action
+                if action[i][4] < 0:
+                    continue
                 attacked_uid = int(action[i][4])
                 attacked = self.state['units_enemy'][attacked_uid]
                 if attacking is None or attacked is None:
@@ -160,6 +162,45 @@ class MultiAgentEnv(sc.StarCraftEnv):
         if self.obs_pre[0] > self.obs[0]:
             reward = -10
 	'''
+        if self.obs_pre is not None:
+            myself_hp = 0
+            enemy_hp = 0
+            n_myself = 0
+            n_enemy = 0
+            myself_hp_pre = 0
+            n_myself_pre = 0
+            enemy_hp_pre = 0
+            n_enemy_pre = 0
+            for i in len(self.obs):
+                if self.obs[i][5] == 0:
+                    myself_hp += self.obs[i][1] + self.obs[i][2]
+                    n_myself += 1
+                else:
+                    enemy_hp += self.obs[i][1] + self.obs[i][2]
+                    n_enemy += 1
+            myself_hp = myself_hp / (n_myself + np.finfo(np.float32).eps)
+            enemy_hp = enemy_hp / (n_enemy + np.finfo(np.float32).eps)
+
+            for j in len(self.obs_pre):
+                if self.obs_pre[j][5] == 0:
+                    myself_hp_pre += self.obs_pre[j][1] + self.obs_pre[j][2]
+                    n_myself_pre += 1
+                else:
+                    enemy_hp_pre += self.obs_pre[j][1] + self.obs_pre[j][2]
+                    n_enemy_pre += 1
+            myself_hp_pre = myself_hp_pre / (n_myself_pre + np.finfo(np.float32).eps)
+            enemy_hp_pre = enemy_hp_pre / (n_enemy_pre + np.finfo(np.float32).eps)
+
+            reduced_myself = myself_hp_pre - myself_hp
+            reduced_enemy = enemy_hp_pre - enemy_hp
+            if reduced_enemy > reduced_myself:
+                reward = 30
+            elif reduced_enemy < reduced_myself:
+                reward = -30
+            else:
+                reward = -10
+
+
         if self._check_done() and not bool(self.state['battle_won']):
             reward = -500
         if self._check_done() and bool(self.state['battle_won']):
