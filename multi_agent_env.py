@@ -9,8 +9,8 @@ import gym_starcraft.envs.starcraft_env as sc
 DISTANCE_FACTOR = 16
 
 class MultiAgentEnv(sc.StarCraftEnv):
-    def __init__(self, server_ip, server_port, speed=0, frame_skip=0,
-                 self_play=False, max_episode_steps=2000):
+    def __init__(self, server_ip, server_port, speed=0, frame_skip=3,
+                 self_play=False, max_episode_steps=500):
         super(MultiAgentEnv, self).__init__(server_ip, server_port, speed,
                                               frame_skip, self_play,
                                               max_episode_steps)
@@ -90,7 +90,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
                 degree = action[i][2] * 180
                 distance = (action[i][3] + 1) * DISTANCE_FACTOR
                 x2, y2 = utils.get_position(degree, distance, attacking.x, -attacking.y)
-                cmd.append(proto.concat_cmd(proto.commands['command_unit_protected'], uid,
+                cmds.append(proto.concat_cmd(proto.commands['command_unit_protected'], uid,
                     proto.unit_command_types['Move'], -1, x2, -y2))
 
 
@@ -193,12 +193,19 @@ class MultiAgentEnv(sc.StarCraftEnv):
 
             reduced_myself = myself_hp_pre - myself_hp
             reduced_enemy = enemy_hp_pre - enemy_hp
+            
             if reduced_enemy > reduced_myself:
-                reward = 30
-            elif reduced_enemy < reduced_myself:
-                reward = -30
+                reward = reduced_enemy - reduced_myself
+            elif reduced_enemy <= reduced_myself and reduced_enemy > 0:
+                reward = (reduced_enemy - reduced_myself) / 100
             else:
-                reward = -10
+                reward = -2
+            
+            #reward = reduced_enemy - reduced_myself
+            #print(reward)
+
+            #if reduced_enemy == 0:
+            #    reward = -30   
 
 
         if self._check_done() and not bool(self.state['battle_won']):
@@ -207,5 +214,5 @@ class MultiAgentEnv(sc.StarCraftEnv):
             reward = 1000
             self.episode_wins += 1
         if self.episode_steps == self.max_episode_steps:
-            reward = -500
+            reward = -1000
         return reward
