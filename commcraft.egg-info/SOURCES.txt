@@ -1,0 +1,5 @@
+commcraft.egg-info/PKG-INFO
+commcraft.egg-info/SOURCES.txt
+commcraft.egg-info/dependency_links.txt
+commcraft.egg-info/requires.txt
+commcraft.egg-info/top_level.txt

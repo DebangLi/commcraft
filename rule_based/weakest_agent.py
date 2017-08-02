@@ -8,6 +8,7 @@ class WeakestAgent(object):
         self.action_space = action_space
 
     def act(self, obs):
+#	print(obs)
         nagent = len(obs) - np.sum(obs, axis = 0, dtype = np.int32)[5]
         action = np.zeros([nagent, self.action_space.shape[0]])
         tmp_hp = 1000000

@@ -81,6 +81,8 @@ class IndependentAgents(object):
 						if obs[j][5] == 1:
 							enemy_table[ind_enemy] = obs[j][0]
 							ind_enemy += 1
+				print('The input is:---------------------------')
+				print(input)
 				act = select_action(input)
 		
 				action[n][0] = obs[i][0]

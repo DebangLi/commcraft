@@ -133,7 +133,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
             obs[n][1] = myself.health
             obs[n][2] = myself.shield
             obs[n][3] = myself.groundCD
-            obs[n][4] = myself.groundRange / DISTANCE_FACTOR - 1
+            obs[n][4] = float(myself.groundRange) / DISTANCE_FACTOR - 1
             obs[n][5] = 0.0
             obs[n][6] = myself.x
             obs[n][7] = myself.y
@@ -144,7 +144,7 @@ class MultiAgentEnv(sc.StarCraftEnv):
             obs[n][1] = enemy.health
             obs[n][2] = enemy.shield
             obs[n][3] = enemy.groundCD
-            obs[n][4] = enemy.groundRange / DISTANCE_FACTOR - 1
+            obs[n][4] = float(enemy.groundRange) / DISTANCE_FACTOR - 1
             obs[n][5] = 1.0
             obs[n][6] = enemy.x
             obs[n][7] = enemy.y
@@ -197,9 +197,9 @@ class MultiAgentEnv(sc.StarCraftEnv):
             if reduced_enemy > reduced_myself:
                 reward = reduced_enemy - reduced_myself
             elif reduced_enemy <= reduced_myself and reduced_enemy > 0:
-                reward = (reduced_enemy - reduced_myself) / 100
+                reward = (reduced_enemy - reduced_myself) 
             else:
-                reward = -2
+                reward = (reduced_enemy - reduced_myself)*2
             
             #reward = reduced_enemy - reduced_myself
             #print(reward)
@@ -209,10 +209,10 @@ class MultiAgentEnv(sc.StarCraftEnv):
 
 
         if self._check_done() and not bool(self.state['battle_won']):
-            reward = -500
+            reward = -50
         if self._check_done() and bool(self.state['battle_won']):
-            reward = 1000
+            reward = 100
             self.episode_wins += 1
         if self.episode_steps == self.max_episode_steps:
-            reward = -1000
+            reward = -100
         return reward

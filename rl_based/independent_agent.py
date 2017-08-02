@@ -29,7 +29,7 @@ parser.add_argument('--eposides', type=int, default=0, help='start from which ep
 args = parser.parse_args()
 print(args)
 DISTANCE_FACTOR = 16
-vis = visdom.Visdom(env='ind', port=8099)
+vis = visdom.Visdom(env='ind', port=8097)
 log_actions=[]
 class IndependentAgents(object):
 	def __init__(self, action_space):
@@ -124,8 +124,8 @@ class IndependentAgents(object):
 						action[n][2] = -0.25
 
 				n = n + 1
-		for i in range(n-1):
-			model.rewards.append(0)
+		#for i in range(n-1):
+		#	model.rewards.append(0)
 
 		return action
 
@@ -159,7 +159,10 @@ def select_action(state):
 	state = torch.from_numpy(state).float().unsqueeze(0)
 	probs = model(Variable(state.cuda()))
 	model.saved_probs.append(probs)
+	#print('The probs is:')
+	#print(probs)
 	action = probs.multinomial()
+	#print(action)
 	#log_actions.append(action.data[0,0])
 	#vis.line(np.array(log_actions), win=0)
 	log = open('ind_snapshots/log_action.txt','a')
@@ -171,20 +174,28 @@ def select_action(state):
 def finish_episode(episodes):
 	R = 0
 	rewards = []
+	#print(len(model.rewards))
+	#print(len(model.saved_actions))
 	# get the accumlated reward
 	for r in model.rewards[::-1]:
 		R = r + args.gamma * R
 		rewards.insert(0,R)
 	rewards = torch.Tensor(rewards)
-	rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps)
+	#rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps)
+	log_reward = open('ind_snapshots/rewad.txt', 'a')
 	for action, r in zip(model.saved_actions, rewards):
+		#log_reward.write(str(action)+' '+str(r))
+		#print(action.data.cpu().numpy()[0,0])
 		action.reinforce(r)
-	#optimizer.zero_grad()
+		log_reward.write(str(action.data.cpu().numpy()[0,0])+ ' ' 
+			+ str(r)+'\n')
+	log_reward.close()
+	optimizer.zero_grad()
 	autograd.backward(model.saved_actions, [None for _ in model.saved_actions])
-	#optimizer.step()
-	if episodes % 16 == 0:
-		optimizer.step()
-		optimizer.zero_grad()
+	optimizer.step()
+	#if episodes % 4 == 0:
+	#	optimizer.step()
+	#	optimizer.zero_grad()
 	del model.rewards[:]
 	del model.saved_actions[:]
 	del model.saved_probs[:]
@@ -210,7 +221,9 @@ def supervised():
 
 if __name__ == '__main__':
 
-	env = sc.MultiAgentEnv(args.ip, args.port, speed=30)
+	max_episode_steps = 500
+
+	env = sc.MultiAgentEnv(args.ip, args.port, speed=30, max_episode_steps = max_episode_steps)
 	env.seed(123)
 	torch.manual_seed(123)
 
@@ -231,10 +244,16 @@ if __name__ == '__main__':
 		episodes += 1
 		'''
 		reward_sum = 0
-		for t in range(500):
+		for t in range(max_episode_steps):
 			action = agent.act(obs)
 			obs, reward, done, _ = env.step(action)
-			model.rewards.append(reward)
+			#model.rewards.append(reward)
+			if action is not None:
+				n = len(action)
+			else:
+				n = 0
+			for i in range(n):
+				model.rewards.append(reward)
 			reward_sum += reward
 			if done:
 				break
